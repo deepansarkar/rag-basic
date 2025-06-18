@@ -1,0 +1,12 @@
+# Ignore all files under the data/ directory, but keep folder structure
+data/**/*
+!data/.gitkeep
+
+# Ignore __pycache__ folders only under src/
+src/**/__pycache__/
+
+# Ignore .env file
+.env
+
+# Ignore virtual environment folder
+venv/

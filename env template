@@ -1,0 +1,5 @@
+MODEL_DIR=models
+OPENROUTER_API_KEY=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
+OPENROUTER_API_URL=https://openrouter.ai/api/v1/chat/completions
+MIN_TRIES=5
+LLM_MODEL=deepseek/deepseek-r1-0528-qwen3-8b
