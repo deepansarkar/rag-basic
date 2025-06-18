@@ -40,8 +40,10 @@ pip install -r requirements.txt
 
 ## 🧪 Run the chatbot
 
-Place your PDF files inside the data/pdfs/ folder making sure the file has a .pdf extension. You can add multiple PDFs. The system will index them for retrieval.
-Note: The data/pdfs/.gitkeep file is used to preserve the folder structure in Git. It’s safe to leave it in place.
+1. Place your PDF files inside the data/pdfs/ folder.
+2. Ensure each file has a .pdf extension.
+3. You can add multiple PDFs — the system will index them for retrieval.
+📌 Note: The data/pdfs/.gitkeep file preserves folder structure in Git. It’s safe to leave it in place.
 
 ```bash
 python ask.py
@@ -86,21 +88,29 @@ venv/
 Then create a placeholder file to preserve the `data/` folder:
 
 ```bash
-touch data/.gitkeep
+mkdir -p data/pdfs data/cache
+touch data/.gitkeep data/pdfs/.gitkeep data/cache/.gitkeep
 ```
 
-### 3 a. Commit and push - Initial
+💡 On Windows, if touch doesn't work, use echo.:
+
+```bash
+echo.> data\.gitkeep
+```
+
+### 3. Git Commands
+
+#### a. Initial commit and push
 
 ```bash
 git add .
 git commit -m "Initial commit"
 git branch -M main
 git remote add origin https://github.com/your-username/your-repo.git
-#git remote add origin https://github.com/deepansarkar/rag-basic.git
 git push -u origin main
 ```
 
-### 3 b. Commit and push - Follow On
+#### b. Later commits and pushes
 
 ```bash
 git add .
@@ -108,13 +118,13 @@ git commit -m "Describe what changed"
 git push
 ```
 
-### 3 c. Pull
+#### c. Pull updates
 
 ```bash
 git pull origin main
 ```
 
-### 4. Clone
+### 4. Clone the repository
 
 ```bash
 git clone https://github.com/deepansarkar/rag-basic.git
