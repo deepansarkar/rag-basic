@@ -1,7 +1,11 @@
 # Ignore all files under the data/ directory, but keep folder structure
-data/**/*
+data/*
+!data/**/
 !data/.gitkeep
+data/pdfs/*
 !data/pdfs/.gitkeep
+data/cache/*
+!data/cache/.gitkeep
 
 # Ignore __pycache__ folders only under src/
 src/**/__pycache__/
