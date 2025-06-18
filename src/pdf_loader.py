@@ -31,8 +31,8 @@ def load_pdf(file_path: str) -> str:
     return text
 
 
-# Function to split large text into smaller chunks
-def chunk_text(text: str, chunk_size: int = 500) -> list:
+# Function to split large text into smaller simple chunks
+def chunk_text_simple(text: str, chunk_size: int = 500) -> list:
     """
     Splits a long string of text into smaller chunks of fixed size.
 

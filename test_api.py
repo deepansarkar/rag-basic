@@ -33,8 +33,7 @@ def ask_openrouter(question: str) -> str:
 
         # If the response is successful (HTTP 200), return the content
         if response.status_code == 200:
-            result = response.json()
-            return result['choices'][0]['message']['content'].strip().split('\n')[0]
+            return response.json()["choices"][0]["message"]["content"].strip()
 
         # If the response is an error, print the status and message
         else:

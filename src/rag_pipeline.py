@@ -1,5 +1,5 @@
 import os
-from src.pdf_loader import load_pdf, chunk_text
+from src.pdf_loader import load_pdf, chunk_text_simple
 from src.vector_store import VectorStore
 from src.openrouter_api import query_openrouter
 from torch import cat
@@ -38,8 +38,8 @@ class RAGChat:
                 # Load and extract raw text from the PDF
                 raw_text = load_pdf(path)
 
-                # Split the raw text into smaller chunks
-                chunks = chunk_text(raw_text)
+                # Split the raw text into smaller simple chunks
+                chunks = chunk_text_simple(raw_text)
 
                 # Load cached embeddings or compute and cache them if missing
                 chunks, embeddings = self.vstore.load_or_create(file, chunks)
