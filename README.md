@@ -40,6 +40,9 @@ pip install -r requirements.txt
 
 ## 🧪 Run the chatbot
 
+Place your PDF files inside the data/pdfs/ folder making sure the file has a .pdf extension. You can add multiple PDFs. The system will index them for retrieval.
+Note: The data/pdfs/.gitkeep file is used to preserve the folder structure in Git. It’s safe to leave it in place.
+
 ```bash
 python ask.py
 ```
