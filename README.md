@@ -55,6 +55,8 @@ python ask.py
 
 ```bash
 git init
+git config --global user.name "Jane Doe"
+git config --global user.email "jane.doe@example.com"
 ```
 
 ### 2. Add a `.gitignore` file
