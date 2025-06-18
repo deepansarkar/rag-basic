@@ -112,6 +112,13 @@ git push
 git pull origin main
 ```
 
+### 4. Clone
+
+```bash
+git clone https://github.com/deepansarkar/rag-basic.git
+cd rag-basic
+```
+
 ---
 
 ## ✅ Notes
