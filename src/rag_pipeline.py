@@ -7,7 +7,7 @@ from torch import cat
 # Define a class to manage Retrieval-Augmented Generation (RAG) over PDF documents
 class RAGChat:
     # Initialize the RAGChat system with a folder of PDFs
-    def __init__(self, pdf_folder="data/pdfs"):
+    def __init__(self, pdf_folder="data/pdf"):
         # Set the folder path where PDFs are located
         self.pdf_folder = pdf_folder
 
