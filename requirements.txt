@@ -1,4 +1,5 @@
+PyPDF2
 python-dotenv
 requests
-PyPDF2
-sentence-transformers
+sentence_transformers
+torch

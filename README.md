@@ -4,6 +4,10 @@ A simple Retrieval-Augmented Generation (RAG) system to answer questions from PD
 
 ---
 
+## 📂 Sample Data
+
+Sample PDFs used for testing and development are located in the [`sample_data/`](./sample_data/) folder. These documents can be used as input for preprocessing, chunking, and embedding in the RAG pipeline.
+
 ## 🚀 Setup
 
 ### 1. Create a virtual environment
@@ -19,6 +23,12 @@ python -m venv venv
 venv\Scripts\activate
 ```
 
+In case activation does not work try
+```bash
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+venv\Scripts\activate
+```
+
 **On Mac/Linux:**
 ```bash
 source venv/bin/activate
@@ -27,7 +37,7 @@ source venv/bin/activate
 ### 3. Upgrade pip
 
 ```bash
-pip install --upgrade pip
+python.exe -m pip install --upgrade pip
 ```
 
 ### 4. Install required packages
@@ -137,3 +147,38 @@ cd rag-basic
 
 - Make sure to keep your `.env` file private and **never commit secrets**.
 - Use `requirements.txt` to manage dependencies reproducibly.
+
+
+## 📦 Generating `requirements.txt`
+
+To ensure that only actual third-party dependencies are listed (excluding built-in Python modules like `os` or `time`), this project uses [`pipreqs`](https://github.com/bndr/pipreqs) to generate the `requirements.txt` file.
+
+### 🔧 Steps to Generate
+
+1. **Install pipreqs** (if not already installed):
+```bash
+pip install pipreqs
+```
+
+1. **Generate the requirements file from the project root**:
+
+```bash
+pipreqs . --force
+```
+
+. – Tells pipreqs to scan the current directory.
+--force – Overwrites existing requirements.txt.
+
+The resulting requirements.txt will include only the external packages used in the codebase, such as requests, PyPDF2, torch, and others.
+
+Clean the requirements.txt file by removing the version number and duplicates.
+
+ℹ️ Standard library modules (e.g., os, time, pickle) are automatically excluded.
+
+
+
+
+
+
+
+
