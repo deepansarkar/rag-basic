@@ -174,11 +174,3 @@ The resulting requirements.txt will include only the external packages used in t
 Clean the requirements.txt file by removing the version number and duplicates.
 
 ℹ️ Standard library modules (e.g., os, time, pickle) are automatically excluded.
-
-
-
-
-
-
-
-
