@@ -161,7 +161,7 @@ To ensure that only actual third-party dependencies are listed (excluding built-
 pip install pipreqs
 ```
 
-1. **Generate the requirements file from the project root**:
+2. **Generate the requirements file from the project root**:
 
 ```bash
 pipreqs . --force
@@ -171,6 +171,8 @@ pipreqs . --force
 --force – Overwrites existing requirements.txt.
 
 The resulting requirements.txt will include only the external packages used in the codebase, such as requests, PyPDF2, torch, and others.
+
+3. **Update the requirements file**:
 
 Clean the requirements.txt file by removing the version number and duplicates.
 
