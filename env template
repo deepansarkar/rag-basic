@@ -1,0 +1,4 @@
+OPENROUTER_API_KEY=Create From <https://openrouter.ai/settings/keys>
+OPENROUTER_API_URL=https://openrouter.ai/api/v1/chat/completions
+MIN_TRIES=5
+LLM_MODEL=deepseek/deepseek-r1-0528:free

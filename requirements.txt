@@ -1,0 +1,5 @@
+PyPDF2
+python-dotenv
+requests
+sentence_transformers
+torch
