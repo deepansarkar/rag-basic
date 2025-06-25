@@ -147,6 +147,7 @@ cd rag-basic
 
 - Make sure to keep your `.env` file private and **never commit secrets**.
 - Use `requirements.txt` to manage dependencies reproducibly.
+- Create an OpenRouter Key From **https://openrouter.ai/settings/keys**.
 
 
 ## 📦 Generating `requirements.txt`
