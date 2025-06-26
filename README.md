@@ -55,6 +55,12 @@ pip install -r requirements.txt
 3. You can add multiple PDFs — the system will index them for retrieval.
 📌 Note: The data/pdfs/.gitkeep file preserves folder structure in Git. It’s safe to leave it in place.
 
+**Reset the Vector Store**
+```bash
+python asreset_vector_storek.py
+```
+
+**Start the Chatbot**
 ```bash
 python ask.py
 ```
@@ -157,6 +163,8 @@ To ensure that only actual third-party dependencies are listed (excluding built-
 ### 🔧 Steps to Generate
 
 1. **Install pipreqs** (if not already installed):
+
+** Install in Global Python not Local**
 ```bash
 pip install pipreqs
 ```
