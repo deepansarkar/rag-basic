@@ -33,11 +33,13 @@ class VectorStore:
 
     def clear(self):
         """
-        Clears the entire embedding cache by deleting the cache directory
-        and recreating it. This resets the vector store.
+        Clears the entire embedding cache by deleting pkl files inside the cache directory.
+        This resets the vector store.
         """
         if os.path.exists(self.cache_dir):
-            shutil.rmtree(self.cache_dir)
+            for file in os.listdir(self.cache_dir):
+                if file.endswith(".pkl"):
+                    os.remove(os.path.join(self.cache_dir, file))
             print(f"Cleared cache directory: {self.cache_dir}")
         os.makedirs(self.cache_dir, exist_ok=True)
 

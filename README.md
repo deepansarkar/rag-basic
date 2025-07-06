@@ -4,11 +4,11 @@ A simple Retrieval-Augmented Generation (RAG) system to answer questions from PD
 
 ---
 
-## 📂 Sample Data
+## Sample Data
 
 Sample PDFs used for testing and development are located in the [`sample_data/`](./sample_data/) folder. These documents can be used as input for preprocessing, chunking, and embedding in the RAG pipeline.
 
-## 🚀 Setup
+## Setup
 
 ### 1. Create a virtual environment
 
@@ -25,7 +25,7 @@ venv\Scripts\activate
 
 In case activation does not work try
 ```bash
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 venv\Scripts\activate
 ```
 
@@ -48,26 +48,26 @@ pip install -r requirements.txt
 
 ---
 
-## 🧪 Run the chatbot
+## Run the chatbot
 
-1. Place your PDF files inside the data/pdfs/ folder.
-2. Ensure each file has a .pdf extension.
-3. You can add multiple PDFs — the system will index them for retrieval.
-📌 Note: The data/pdfs/.gitkeep file preserves folder structure in Git. It’s safe to leave it in place.
+**1. Place your PDF files inside the data/pdfs/ folder.**
+    a. Ensure each file has a .pdf extension.
+    b. You can add multiple PDFs — the system will index them for retrieval.
+    Note: The data/pdfs/.gitkeep file preserves folder structure in Git. It’s safe to leave it in place.
 
-**Reset the Vector Store**
+**2. Reset the Vector Store**
 ```bash
 python reset_vector_store.py
 ```
 
-**Start the Chatbot**
+**3. Start the Chatbot**
 ```bash
 python ask.py
 ```
 
 ---
 
-## 🔧 Git Setup
+## Git Setup
 
 ### 1. Initialize Git repository
 
@@ -108,7 +108,7 @@ mkdir -p data/pdfs data/cache
 touch data/.gitkeep data/pdfs/.gitkeep data/cache/.gitkeep
 ```
 
-💡 On Windows, if touch doesn't work, use echo.:
+On Windows, if touch doesn't work, use echo.:
 
 ```bash
 echo.> data\.gitkeep
@@ -149,14 +149,14 @@ cd rag-basic
 
 ---
 
-## ✅ Notes
+## Notes
 
 - Make sure to keep your `.env` file private and **never commit secrets**.
 - Use `requirements.txt` to manage dependencies reproducibly.
 - Create an OpenRouter Key From **https://openrouter.ai/settings/keys**.
 
 
-## 📦 Generating `requirements.txt`
+## Generating `requirements.txt`
 
 To ensure that only actual third-party dependencies are listed (excluding built-in Python modules like `os` or `time`), this project uses [`pipreqs`](https://github.com/bndr/pipreqs) to generate the `requirements.txt` file.
 
@@ -185,4 +185,4 @@ The resulting requirements.txt will include only the external packages used in t
 
 Clean the requirements.txt file by removing the version number and duplicates.
 
-ℹ️ Standard library modules (e.g., os, time, pickle) are automatically excluded.
+Standard library modules (e.g., os, time, pickle) are automatically excluded.
