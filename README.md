@@ -57,7 +57,7 @@ pip install -r requirements.txt
 
 **Reset the Vector Store**
 ```bash
-python asreset_vector_storek.py
+python reset_vector_store.py
 ```
 
 **Start the Chatbot**
@@ -173,6 +173,7 @@ pip install pipreqs
 
 ```bash
 pipreqs . --force
+(gc requirements.txt) -replace '==.*','' | Sort-Object -Unique | sc requirements.txt
 ```
 
 . – Tells pipreqs to scan the current directory.
