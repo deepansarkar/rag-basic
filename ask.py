@@ -3,7 +3,7 @@ from src.rag_pipeline import RAGChat
 # Define the main function which serves as the entry point of the application
 def main():
     # Display a title banner for the chat interface
-    print("📄 RAG PDF Chat")
+    print("RAG PDF Chat")
     
     # Initialize the RAGChat instance which loads and processes all PDFs at startup
     rag = RAGChat()
@@ -15,11 +15,11 @@ def main():
     while True:
         try:
             # Prompt user for input and strip whitespace
-            question = input("🧠 You: ").strip()
+            question = input("You: ").strip()
 
             # If user types "exit" or "quit", terminate the program gracefully
             if question.lower() in {"exit", "quit"}:
-                print("👋 Exiting. Goodbye!")
+                print("RAG Bot: Goodbye!")
                 break
 
             # If the user entered a non-empty question
@@ -28,7 +28,7 @@ def main():
                 answer = rag.ask(question)
 
                 # Print the answer as a raw multiline response
-                print("🤖 Answer:\n")
+                print("RAG Bot:")
                 print(answer)
 
                 # Print a blank line for visual spacing
@@ -36,16 +36,16 @@ def main():
 
             # If the user submitted an empty question
             else:
-                print("⚠️ Please enter a question.")
+                print("RAG Bot: Please enter a question.")
 
         # Handle Ctrl+C gracefully by exiting the loop
         except KeyboardInterrupt:
-            print("\n👋 Exiting. Goodbye!")
+            print("\nGoodbye!")
             break
 
         # Catch and display any other unexpected errors
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"Error: {e}")
 
 # Entry point check to run the main function if this file is executed directly
 if __name__ == "__main__":

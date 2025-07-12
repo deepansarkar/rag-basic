@@ -1,183 +1,152 @@
 import os
 import pickle
-import shutil
-from sentence_transformers import SentenceTransformer, util
-from torch import cat
-from src.pdf_loader import load_pdf, chunk_text_simple
+import faiss
+import numpy as np
+from sentence_transformers import SentenceTransformer
+from src.pdf_loader import load_pdf, chunk_text_with_overlap
 
-class VectorStore:
-    def __init__(self, cache_dir="data/cache"):
+class VectorStoreFAISS:
+    def __init__(self):
         """
-        Initialize the VectorStore with:
-        - A pre-trained sentence transformer model
-        - A directory to store cached embeddings
+        Initialize the FAISS-based vector store.
+
+        Args:
+            index_path (str): Base path (without extension) for saving/loading the FAISS index file.
+            chunk_map_path (str): Path for saving/loading the mapping of FAISS indices to text chunks.
         """
         self.model = SentenceTransformer("all-MiniLM-L6-v2")
-        self.cache_dir = cache_dir
-        # Ensure the cache directory exists
-        os.makedirs(self.cache_dir, exist_ok=True)
+        self.index_path = "data/cache/faiss_index.index"
+        self.chunk_map_path = "data/cache/chunk_map.pkl"
+        self.index = None     # This will hold the FAISS index object
+        self.chunks = []      # This list maps FAISS indices to text chunks
 
-    def get_cache_path(self, pdf_name):
+    def normalize_embeddings(self, embeddings):
         """
-        Returns the full path to the cache file for a given PDF name.
-        Removes the file extension and appends '.pkl'.
+        Normalize vectors to unit length so that inner product becomes cosine similarity.
 
         Args:
-            pdf_name (str): Filename of the PDF
+            embeddings (np.ndarray): Array of shape (n_samples, dim)
 
         Returns:
-            str: Full path to the cache file
+            np.ndarray: Normalized array of the same shape
         """
-        base = os.path.splitext(pdf_name)[0]
-        return os.path.join(self.cache_dir, base + ".pkl")
+        return embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
 
-    def clear(self):
+    def build(self, pdf_folder="data/pdf"):
         """
-        Clears the entire embedding cache by deleting pkl files inside the cache directory.
-        This resets the vector store.
-        """
-        if os.path.exists(self.cache_dir):
-            for file in os.listdir(self.cache_dir):
-                if file.endswith(".pkl"):
-                    os.remove(os.path.join(self.cache_dir, file))
-            print(f"Cleared cache directory: {self.cache_dir}")
-        os.makedirs(self.cache_dir, exist_ok=True)
-
-    def create(self, pdf_name, chunks):
-        """
-        Creates embeddings for the provided chunks and saves them to cache.
+        Processes all PDFs in a folder, creates embeddings, builds a FAISS index,
+        and saves both the index and the chunk mapping to disk.
 
         Args:
-            pdf_name (str): Name of the source PDF file
-            chunks (list of str): Text chunks to encode
-        """
-        # Encode the chunks
-        embeddings = self.model.encode(chunks, convert_to_tensor=True)
-        # Determine cache file path
-        cache_file = self.get_cache_path(pdf_name)
-
-        # Write the chunks and embeddings to cache using pickle
-        with open(cache_file, "wb") as f:
-            pickle.dump((chunks, embeddings), f)
-        print(f"Created and cached embeddings for {pdf_name}")
-
-    def load(self, pdf_name):
-        """
-        Loads cached chunks and embeddings for a given PDF.
-
-        Args:
-            pdf_name (str): Name of the PDF
-
-        Returns:
-            tuple: (chunks, embeddings)
-
-        Raises:
-            FileNotFoundError: If cache file is missing
-        """
-        cache_file = self.get_cache_path(pdf_name)
-        if not os.path.exists(cache_file):
-            raise FileNotFoundError(f"No cache found for {pdf_name}")
-
-        # Load cached data from disk
-        with open(cache_file, "rb") as f:
-            print(f"Loaded cached data for {pdf_name}")
-            return pickle.load(f)
-
-    def fetch(self, pdf_name, chunks):
-        """
-        Attempts to load from cache. If not found, creates and then loads.
-
-        Args:
-            pdf_name (str): Name of the PDF
-            chunks (list): Chunks to use for embedding if cache is missing
-
-        Returns:
-            tuple: (chunks, embeddings)
-        """
-        try:
-            return self.load(pdf_name)
-        except FileNotFoundError:
-            self.create(pdf_name, chunks)
-            return self.load(pdf_name)
-
-    def fetch_all(self, pdf_folder="data/pdf"):
-        """
-        Processes all PDFs in the specified folder:
-        - If cache exists, loads embeddings and chunks
-        - Otherwise, creates and loads
-
-        Returns:
-            tuple: (all_chunks, combined_embeddings Tensor)
+            pdf_folder (str): Directory containing PDF files.
         """
         all_chunks = []
         all_embeddings = []
 
+        # Iterate through each PDF file
         for file in os.listdir(pdf_folder):
             if file.lower().endswith(".pdf"):
                 path = os.path.join(pdf_folder, file)
 
-                # Extract text and chunk it
+                # Load PDF text and chunk it into paragraphs/sentences
                 raw_text = load_pdf(path)
-                chunks = chunk_text_simple(raw_text)
+                chunks = chunk_text_with_overlap(raw_text)
 
-                # Fetch from cache or create+load
-                chunks, embeddings = self.fetch(file, chunks)
+                # Encode the chunks into embeddings using SentenceTransformers
+                embeddings = self.model.encode(chunks, convert_to_numpy=True)
 
-                # Accumulate results
+                # Accumulate chunks and embeddings
                 all_chunks.extend(chunks)
                 all_embeddings.append(embeddings)
 
         if not all_chunks:
             raise ValueError("No valid PDFs found in the specified folder.")
 
-        # Merge all embeddings into a single tensor for querying
-        combined_embeddings = cat(all_embeddings, dim=0)
-        print(f"Fetched all: {len(all_chunks)} chunks from {pdf_folder}")
-        return all_chunks, combined_embeddings
+        # Concatenate all embeddings into a single array
+        all_embeddings = np.vstack(all_embeddings)
 
-    def retrieve_top_k(self, chunks, embeddings, query, k=3):
+        # Normalize embeddings for cosine similarity
+        all_embeddings = self.normalize_embeddings(all_embeddings)
+
+        # Create a FAISS index for Inner Product (which acts like cosine after normalization)
+        dim = all_embeddings.shape[1]
+        self.index = faiss.IndexFlatIP(dim)  # IP = Inner Product
+
+        # Add all embeddings to the FAISS index
+        self.index.add(all_embeddings)
+
+        # Keep the chunks for later retrieval
+        self.chunks = all_chunks
+
+        # Save the index to disk
+        faiss.write_index(self.index, self.index_path)
+
+        # Save the chunk mapping to disk
+        with open(self.chunk_map_path, "wb") as f:
+            pickle.dump(self.chunks, f)
+
+        print(f"Built and saved FAISS index with {len(self.chunks)} chunks.")
+
+    def load(self):
         """
-        Given a query, retrieves the top-k most relevant chunks using cosine similarity.
+        Loads a previously saved FAISS index and chunk mapping from disk.
+        """
+        # Ensure the index and chunk map exist
+        if not os.path.exists(self.index_path) or not os.path.exists(self.chunk_map_path):
+            raise FileNotFoundError("Index or chunk mapping not found. Build the index first.")
+
+        # Load the FAISS index
+        self.index = faiss.read_index(self.index_path)
+
+        # Load the chunk list mapping
+        with open(self.chunk_map_path, "rb") as f:
+            self.chunks = pickle.load(f)
+
+        print(f"Loaded FAISS index with {len(self.chunks)} chunks.")
+
+    def retrieve_top_k(self, query, k=3):
+        """
+        Given a text query, finds the top-k most similar text chunks.
 
         Args:
-            chunks (list): List of all text chunks
-            embeddings (Tensor): Tensor of all chunk embeddings
-            query (str): The user query
-            k (int): Number of top results to return
+            query (str): The user query string.
+            k (int): Number of top results to retrieve.
 
         Returns:
-            list: Top-k most relevant text chunks
+            list: List of the top-k most similar text chunks.
         """
-        query_embedding = self.model.encode(query, convert_to_tensor=True)
+        if self.index is None or not self.chunks:
+            raise RuntimeError("FAISS index not loaded. Call load() or build() first.")
 
-        # Compute cosine similarity to all chunk embeddings
-        scores = util.cos_sim(query_embedding, embeddings)[0]
+        # Encode the query into a single embedding
+        query_embedding = self.model.encode([query], convert_to_numpy=True)
 
-        # Get indices of top-k highest scores
-        top_indices = scores.topk(k)[1]
+        # Normalize the query embedding for cosine similarity
+        query_embedding = self.normalize_embeddings(query_embedding)
 
-        # Return the corresponding top-k chunks
-        return [chunks[i] for i in top_indices]
+        # Perform the search on the FAISS index
+        # distances: similarity scores, indices: indices into self.chunks
+        distances, indices = self.index.search(query_embedding, k)
+
+        # Retrieve the corresponding text chunks
+        top_chunks = [self.chunks[i] for i in indices[0]]
+
+        return top_chunks
 
     def reset(self, pdf_folder="data/pdf"):
         """
-        Clears all cache and recreates embeddings/chunks for each PDF in the folder.
-        Does not return anything — used to fully rebuild the vector store.
+        Clears the existing index and chunk mapping files, and rebuilds the index from PDFs.
 
         Args:
-            pdf_folder (str): Directory containing PDF files
+            pdf_folder (str): Directory containing PDF files to process.
         """
-        self.clear()  # Delete existing cache
+        # Delete existing files if they exist
+        if os.path.exists(self.index_path):
+            os.remove(self.index_path)
+        if os.path.exists(self.chunk_map_path):
+            os.remove(self.chunk_map_path)
 
-        for file in os.listdir(pdf_folder):
-            if file.lower().endswith(".pdf"):
-                path = os.path.join(pdf_folder, file)
+        print("Cleared existing index and chunk map.")
 
-                # Read and chunk the PDF
-                raw_text = load_pdf(path)
-                chunks = chunk_text_simple(raw_text)
-
-                # Only create embeddings and save to cache
-                self.create(file, chunks)
-
-        print(f"Reset vector store: processed all PDFs in {pdf_folder}")
+        # Rebuild everything from scratch
+        self.build(pdf_folder)
