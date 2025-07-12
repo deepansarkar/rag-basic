@@ -6,6 +6,8 @@ data/pdf/*
 !data/pdf/.gitkeep
 data/cache/*
 !data/cache/.gitkeep
+logs/*
+!logs/.gitkeep
 
 # Ignore __pycache__ folders only under src/
 src/**/__pycache__/

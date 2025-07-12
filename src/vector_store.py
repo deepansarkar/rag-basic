@@ -6,147 +6,176 @@ from sentence_transformers import SentenceTransformer
 from src.pdf_loader import load_pdf, chunk_text_with_overlap
 
 class VectorStoreFAISS:
-    def __init__(self):
+    def __init__(self, logger=None):
         """
-        Initialize the FAISS-based vector store.
+        Initializes the FAISS-based vector store system.
 
         Args:
-            index_path (str): Base path (without extension) for saving/loading the FAISS index file.
-            chunk_map_path (str): Path for saving/loading the mapping of FAISS indices to text chunks.
+            logger: A logger object to record all operations and errors.
+
+        Sets up:
+            - The embedding model (SentenceTransformer).
+            - Paths for saving/loading the FAISS index and chunk map.
+            - Empty placeholders for index and chunks.
         """
+        self.logger = logger
+        
         self.model = SentenceTransformer("all-MiniLM-L6-v2")
+        self.logger.info("Sentence Transformer all-MiniLM-L6-v2 loaded.")
+        
         self.index_path = "data/cache/faiss_index.index"
         self.chunk_map_path = "data/cache/chunk_map.pkl"
-        self.index = None     # This will hold the FAISS index object
-        self.chunks = []      # This list maps FAISS indices to text chunks
+        self.logger.debug(f"Index path: {self.index_path}, Chunk map path: {self.chunk_map_path}")
+
+        self.index = None   # Will hold the FAISS index after building/loading
+        self.chunks = []    # List mapping FAISS indices to text chunks
+
+        self.logger.info("Initialized VectorStoreFAISS.")
+        
 
     def normalize_embeddings(self, embeddings):
         """
-        Normalize vectors to unit length so that inner product becomes cosine similarity.
+        Normalizes vectors to unit length so that inner product can act as cosine similarity.
 
         Args:
-            embeddings (np.ndarray): Array of shape (n_samples, dim)
+            embeddings (np.ndarray): Embedding array of shape (n_samples, dim).
 
         Returns:
-            np.ndarray: Normalized array of the same shape
+            np.ndarray: Normalized embedding array.
         """
         return embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
 
     def build(self, pdf_folder="data/pdf"):
         """
-        Processes all PDFs in a folder, creates embeddings, builds a FAISS index,
-        and saves both the index and the chunk mapping to disk.
+        Builds the vector store from all PDFs in a specified folder.
+
+        - Extracts text and splits into overlapping chunks.
+        - Generates embeddings for these chunks.
+        - Builds a FAISS index and saves it along with the chunk map.
 
         Args:
-            pdf_folder (str): Directory containing PDF files.
+            pdf_folder (str): Path to folder containing PDF files.
         """
         all_chunks = []
         all_embeddings = []
 
-        # Iterate through each PDF file
+        self.logger.info(f"Starting to build vector index from PDFs in folder: {pdf_folder}")
+
+        # Iterate through PDF files and process them
         for file in os.listdir(pdf_folder):
             if file.lower().endswith(".pdf"):
                 path = os.path.join(pdf_folder, file)
+                try:
+                    # Load and chunk PDF text
+                    raw_text = load_pdf(path, self.logger)
+                    chunks = chunk_text_with_overlap(raw_text, logger=self.logger)
 
-                # Load PDF text and chunk it into paragraphs/sentences
-                raw_text = load_pdf(path)
-                chunks = chunk_text_with_overlap(raw_text)
+                    # Encode chunks into embeddings
+                    embeddings = self.model.encode(chunks, convert_to_numpy=True)
 
-                # Encode the chunks into embeddings using SentenceTransformers
-                embeddings = self.model.encode(chunks, convert_to_numpy=True)
+                    # Accumulate
+                    all_chunks.extend(chunks)
+                    all_embeddings.append(embeddings)
 
-                # Accumulate chunks and embeddings
-                all_chunks.extend(chunks)
-                all_embeddings.append(embeddings)
+                    self.logger.info(f"Processed {file}: {len(chunks)} chunks extracted.")
+
+                except Exception as e:
+                    self.logger.error(f"Failed to process {file}: {e}", exc_info=True)
 
         if not all_chunks:
-            raise ValueError("No valid PDFs found in the specified folder.")
+            err_msg = "No valid PDFs found or extracted text was empty."
+            self.logger.error(err_msg)
+            raise ValueError(err_msg)
 
-        # Concatenate all embeddings into a single array
+        # Stack embeddings into a single array
         all_embeddings = np.vstack(all_embeddings)
-
-        # Normalize embeddings for cosine similarity
         all_embeddings = self.normalize_embeddings(all_embeddings)
 
-        # Create a FAISS index for Inner Product (which acts like cosine after normalization)
+        # Build FAISS index (inner product on normalized vectors approximates cosine)
         dim = all_embeddings.shape[1]
-        self.index = faiss.IndexFlatIP(dim)  # IP = Inner Product
-
-        # Add all embeddings to the FAISS index
+        self.index = faiss.IndexFlatIP(dim)
         self.index.add(all_embeddings)
 
-        # Keep the chunks for later retrieval
+        # Keep chunk list for retrieval
         self.chunks = all_chunks
 
-        # Save the index to disk
+        # Persist index and chunk map to disk
         faiss.write_index(self.index, self.index_path)
-
-        # Save the chunk mapping to disk
         with open(self.chunk_map_path, "wb") as f:
             pickle.dump(self.chunks, f)
 
-        print(f"Built and saved FAISS index with {len(self.chunks)} chunks.")
+        self.logger.info(f"Built and saved FAISS index with {len(self.chunks)} chunks.")
 
     def load(self):
         """
-        Loads a previously saved FAISS index and chunk mapping from disk.
+        Loads a previously built FAISS index and chunk mapping from disk.
+
+        Raises:
+            FileNotFoundError: If either the index or the chunk mapping is missing.
         """
-        # Ensure the index and chunk map exist
+        self.logger.info("Attempting to load existing FAISS index and chunk map from disk.")
+
         if not os.path.exists(self.index_path) or not os.path.exists(self.chunk_map_path):
-            raise FileNotFoundError("Index or chunk mapping not found. Build the index first.")
+            err_msg = "FAISS index or chunk mapping not found. Please build the index first."
+            self.logger.error(err_msg)
+            raise FileNotFoundError(err_msg)
 
-        # Load the FAISS index
+        # Load index and chunks
         self.index = faiss.read_index(self.index_path)
-
-        # Load the chunk list mapping
         with open(self.chunk_map_path, "rb") as f:
             self.chunks = pickle.load(f)
 
-        print(f"Loaded FAISS index with {len(self.chunks)} chunks.")
+        self.logger.info(f"Loaded FAISS index with {len(self.chunks)} text chunks.")
 
     def retrieve_top_k(self, query, k=3):
         """
-        Given a text query, finds the top-k most similar text chunks.
+        Given a query string, retrieves the top-k most similar text chunks.
 
         Args:
-            query (str): The user query string.
-            k (int): Number of top results to retrieve.
+            query (str): User query.
+            k (int): Number of top results to return.
 
         Returns:
-            list: List of the top-k most similar text chunks.
+            list: Top-k text chunks most relevant to the query.
         """
         if self.index is None or not self.chunks:
-            raise RuntimeError("FAISS index not loaded. Call load() or build() first.")
+            err_msg = "FAISS index not loaded. Call load() or build() first."
+            if self.logger:
+                self.logger.error(err_msg)
+            raise RuntimeError(err_msg)
 
-        # Encode the query into a single embedding
+        self.logger.debug(f"Encoding query for retrieval: {query}")
+
+        # Encode and normalize the query
         query_embedding = self.model.encode([query], convert_to_numpy=True)
-
-        # Normalize the query embedding for cosine similarity
         query_embedding = self.normalize_embeddings(query_embedding)
 
-        # Perform the search on the FAISS index
-        # distances: similarity scores, indices: indices into self.chunks
+        # Search for top-k nearest neighbors
         distances, indices = self.index.search(query_embedding, k)
 
-        # Retrieve the corresponding text chunks
+        self.logger.debug(f"Retrieved indices: {indices[0]} with similarity scores: {distances[0]}")
+
+        # Map indices back to chunks
         top_chunks = [self.chunks[i] for i in indices[0]]
 
         return top_chunks
 
     def reset(self, pdf_folder="data/pdf"):
         """
-        Clears the existing index and chunk mapping files, and rebuilds the index from PDFs.
+        Clears existing FAISS index and chunk mapping files, and rebuilds index from PDFs.
 
         Args:
-            pdf_folder (str): Directory containing PDF files to process.
+            pdf_folder (str): Directory containing PDFs.
         """
-        # Delete existing files if they exist
+        self.logger.warning("Resetting vector store: deleting existing index and chunk map.")
+
+        # Delete existing files
         if os.path.exists(self.index_path):
             os.remove(self.index_path)
         if os.path.exists(self.chunk_map_path):
             os.remove(self.chunk_map_path)
 
-        print("Cleared existing index and chunk map.")
+        self.logger.info("Existing index and chunk map cleared. Rebuilding from scratch.")
 
-        # Rebuild everything from scratch
+        # Rebuild the index
         self.build(pdf_folder)

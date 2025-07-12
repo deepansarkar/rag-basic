@@ -62,7 +62,7 @@ python reset_vector_store.py
 
 **3. Start the Chatbot**
 ```bash
-python ask.py
+python main.py
 ```
 
 ---

@@ -3,50 +3,51 @@ import requests
 import time
 from dotenv import load_dotenv
 
-# Load environment variables from a .env file into the system environment
+# Load environment variables from a .env file into system environment
 load_dotenv()
 
 # Retrieve required configuration values from the environment
-API_KEY = os.getenv("OPENROUTER_API_KEY")       # API key for OpenRouter authentication
-API_URL = os.getenv("OPENROUTER_API_URL")       # URL endpoint for the OpenRouter API
-MIN_TRIES = int(os.getenv("MIN_TRIES"))         # Number of retry attempts
-LLM_MODEL = os.getenv("LLM_MODEL")              # Language model to use
+API_KEY = os.getenv("OPENROUTER_API_KEY")   # API key for OpenRouter
+API_URL = os.getenv("OPENROUTER_API_URL")   # API endpoint URL
+MIN_TRIES = int(os.getenv("MIN_TRIES"))     # Number of retry attempts
+LLM_MODEL = os.getenv("LLM_MODEL")          # Language model name
 
-# Define the headers required for the API request
+# Prepare the headers for the API request, including authentication
 headers = {
-    "Authorization": f"Bearer {API_KEY}",        # Bearer token for API authentication
-    "Content-Type": "application/json",          # Specify content type as JSON
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json",
 }
 
-def query_openrouter(question, context):
+def query_openrouter(question, context, logger):
     """
     Calls the OpenRouter API with a question and context to retrieve an answer.
-    If the API call fails, it retries multiple times (up to MIN_TRIES).
-    
+    Includes robust retry logic with logging.
+
     Parameters:
         question (str): The question to ask the model.
-        context (str): The context in which the question should be answered.
-        
+        context (str): Relevant context for the question.
+        logger: Logger object for structured logging.
+
     Returns:
-        str: The model's response or an error message if all attempts fail.
+        str: The language model's answer, or an error message after all attempts fail.
     """
 
-    # Create the prompt that guides the model using a Retrieval-Augmented Generation (RAG) style
+    # Construct the prompt following RAG style: embed the context and question together
     prompt = f"""Use the context below to answer the question. If the answer isn't in the context, say "I am not able to answer based on provided context".
 
-    Context:
-    {context}
+Context:
+{context}
 
-    Question: {question}
-    """
+Question: {question}
+"""
 
-    # Construct the data payload to send to the OpenRouter API
+    # Create the JSON payload for the API request
     data = {
-        "model": LLM_MODEL,  # Specifies the model to use
+        "model": LLM_MODEL,
         "messages": [
             {
                 "role": "system",
-                "content": "You are a helpful assistant who answers question based on context from provided data. Reply with concise and accurate information in a single paragraph."
+                "content": "You are a helpful assistant who answers questions based on provided context. Respond concisely in one paragraph."
             },
             {
                 "role": "user",
@@ -55,24 +56,37 @@ def query_openrouter(question, context):
         ]
     }
 
-    # Retry loop: attempt the request up to MIN_TRIES times
+    # Log the start of the API interaction
+    logger.info(f"Sending query to OpenRouter model '{LLM_MODEL}' with question: {question}")
+
+    # Try to make the API request up to MIN_TRIES times
     for attempt in range(1, MIN_TRIES + 1):
         try:
-            # Make the POST request to the OpenRouter API
+            # Attempt to POST the request
             response = requests.post(API_URL, headers=headers, json=data, timeout=15)
 
-            # If the request was successful (HTTP 200 OK), parse and return the model's response
+            # Check if the HTTP response was successful
             if response.status_code == 200:
-                return response.json()["choices"][0]["message"]["content"].strip()
-            else:
-                # Log the HTTP status code for non-successful attempts
-                print(f"Attempt {attempt}: Status {response.status_code}")
-        except Exception as e:
-            # Log any exceptions that occur during the request
-            print(f"Attempt {attempt}: Exception - {e}")
+                answer = response.json()["choices"][0]["message"]["content"].strip()
 
-        # Wait 1 second before retrying to avoid rapid repeated requests
+                logger.info(f"Received successful response on attempt {attempt}.")
+
+                return answer
+            else:
+                # Non-200 HTTP response
+                logger.warning(f"Attempt {attempt}: Received status code {response.status_code}. Response: {response.text}")
+
+        except requests.exceptions.Timeout:
+            # Specific handling for timeouts
+            logger.error(f"Attempt {attempt}: Request timed out.")
+        except Exception as e:
+            # Catch all other exceptions
+            logger.error(f"Attempt {attempt}: Exception occurred - {e}", exc_info=True)
+
+        # Wait a short time before retrying
         time.sleep(1)
 
-    # If all attempts fail, return an error message
+    # If all retries fail, log the final outcome
+    logger.error(f"Failed to get valid response after {MIN_TRIES} attempts.")
+
     return "Failed to get a valid response after multiple attempts."
