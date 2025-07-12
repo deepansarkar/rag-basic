@@ -1,6 +1,6 @@
 # 🧠 RAG PDF Chatbot with OpenRouter API
 
-A simple Retrieval-Augmented Generation (RAG) system to answer questions from PDFs using OpenRouter and LLM Mistral: Devstral Small (free).
+A simple Retrieval-Augmented Generation (RAG) system to answer questions from PDFs using OpenRouter APIs.
 
 ---
 
