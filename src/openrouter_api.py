@@ -1,6 +1,6 @@
-import os
 import requests
 import time
+import os
 from dotenv import load_dotenv
 
 # Load environment variables from a .env file into system environment
@@ -33,13 +33,12 @@ def query_openrouter(question, context, logger):
     """
 
     # Construct the prompt following RAG style: embed the context and question together
-    prompt = f"""Use the context below to answer the question. If the answer isn't in the context, say "I am not able to answer based on provided context".
-
-Context:
-{context}
-
-Question: {question}
-"""
+    prompt = (
+        f"Use the context below to answer the question.\n"
+        f"If the answer isn't in the context, say \"I am not able to answer based on provided context\".\n\n"
+        f"Context:\n{context}\n"
+        f"Question:\n{question}"
+    )
 
     # Create the JSON payload for the API request
     data = {

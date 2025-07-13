@@ -6,7 +6,7 @@ def main():
     It creates a logger, logs some info, and clears all existing logs.
     """
     # Initialize the LoggerManager (this creates a new log file)
-    logger_manager = LoggerManager(console=True)
+    logger_manager = LoggerManager()
     logger = logger_manager.get_logger()
 
     # Log that we are about to clear logs

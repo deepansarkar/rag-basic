@@ -16,7 +16,7 @@ def main():
         vstore = VectorStoreFAISS(logger)
         logger.info("Vectore Store initialized.")
         logger.info("Starting vector store reset process.")
-        vstore.reset(pdf_folder="data/pdf")
+        vstore.reset()
         logger.info("Vector store reset and rebuild completed successfully.")
     except Exception as e:
         logger.error(f"An error occurred during vector store reset: {e}", exc_info=True)

@@ -1,9 +1,19 @@
-import os
 import pickle
 import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from src.pdf_loader import load_pdf, chunk_text_with_overlap
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from a .env file into system environment
+load_dotenv()
+
+# Retrieve required configuration values from the environment
+SENTENCE_TRANSFORMER = os.getenv("SENTENCE_TRANSFORMER")    # API key for OpenRouter
+FOLDER_PATH_PDF = os.getenv("FOLDER_PATH_PDF")              # PDF Folder Path
+FAISS_INDEX = os.getenv("FILE_PATH_FAISS_INDEX")            # FAISS Index Path
+CHUNK_MAP = os.getenv("FILE_PATH_CHUNK_MAP")                # Chunk Map Path
 
 class VectorStoreFAISS:
     def __init__(self, logger=None):
@@ -20,12 +30,14 @@ class VectorStoreFAISS:
         """
         self.logger = logger
         
-        self.model = SentenceTransformer("all-MiniLM-L6-v2")
-        self.logger.info("Sentence Transformer all-MiniLM-L6-v2 loaded.")
+        self.model = SentenceTransformer(SENTENCE_TRANSFORMER)
+        self.logger.info(f"Sentence Transformer {SENTENCE_TRANSFORMER} loaded.")
         
-        self.index_path = "data/cache/faiss_index.index"
-        self.chunk_map_path = "data/cache/chunk_map.pkl"
+        self.index_path = FAISS_INDEX
+        self.chunk_map_path = CHUNK_MAP
         self.logger.debug(f"Index path: {self.index_path}, Chunk map path: {self.chunk_map_path}")
+
+        self.pdf_folder = FOLDER_PATH_PDF
 
         self.index = None   # Will hold the FAISS index after building/loading
         self.chunks = []    # List mapping FAISS indices to text chunks
@@ -45,7 +57,7 @@ class VectorStoreFAISS:
         """
         return embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
 
-    def build(self, pdf_folder="data/pdf"):
+    def build(self):
         """
         Builds the vector store from all PDFs in a specified folder.
 
@@ -59,12 +71,12 @@ class VectorStoreFAISS:
         all_chunks = []
         all_embeddings = []
 
-        self.logger.info(f"Starting to build vector index from PDFs in folder: {pdf_folder}")
+        self.logger.info(f"Starting to build vector index from PDFs in folder: {self.pdf_folder}")
 
         # Iterate through PDF files and process them
-        for file in os.listdir(pdf_folder):
+        for file in os.listdir(self.pdf_folder):
             if file.lower().endswith(".pdf"):
-                path = os.path.join(pdf_folder, file)
+                path = os.path.join(self.pdf_folder, file)
                 try:
                     # Load and chunk PDF text
                     raw_text = load_pdf(path, self.logger)
@@ -160,7 +172,7 @@ class VectorStoreFAISS:
 
         return top_chunks
 
-    def reset(self, pdf_folder="data/pdf"):
+    def reset(self):
         """
         Clears existing FAISS index and chunk mapping files, and rebuilds index from PDFs.
 
@@ -178,4 +190,4 @@ class VectorStoreFAISS:
         self.logger.info("Existing index and chunk map cleared. Rebuilding from scratch.")
 
         # Rebuild the index
-        self.build(pdf_folder)
+        self.build()

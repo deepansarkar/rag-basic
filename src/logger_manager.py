@@ -1,6 +1,13 @@
-import os
 import logging
 from datetime import datetime
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from a .env file into system environment
+load_dotenv()
+
+# Retrieve required configuration values from the environment
+PATH_LOGS = os.getenv("FOLDER_PATH_LOGS")   # Folder Path for Logs
 
 class LoggerManager:
     """
@@ -14,19 +21,18 @@ class LoggerManager:
     [2025-07-12 17:10:55] [INFO] Starting process...
     """
 
-    def __init__(self, base_log_dir='logs', console=False):
+    def __init__(self, console=False):
         """
         Initializes the logger system.
 
         Parameters:
-        - base_log_dir (str): Directory where logs will be stored (default: 'logs').
         - console (bool): If True, also prints logs to stdout.
 
         This ensures the log directory exists, creates a uniquely named log file,
         and sets up logging with the desired format.
         """
         try:
-            self.base_log_dir = base_log_dir
+            self.base_log_dir = PATH_LOGS
             self.console = console
 
             # Ensure that the base log directory exists (creates it if it doesn't)

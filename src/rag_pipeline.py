@@ -1,5 +1,14 @@
 from src.vector_store import VectorStoreFAISS
 from src.openrouter_api import query_openrouter
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from a .env file into system environment
+load_dotenv()
+
+# Retrieve required configuration values from the environment
+API_KEY = os.getenv("OPENROUTER_API_KEY")       # API key for OpenRouter
+FOLDER_PATH_PDF = os.getenv("FOLDER_PATH_PDF")  # PDF Folder Path
 
 class RAGChat:
     """
@@ -11,12 +20,11 @@ class RAGChat:
     All significant operations are logged using the provided logger.
     """
 
-    def __init__(self, pdf_folder="data/pdf", logger=None):
+    def __init__(self, logger=None):
         """
         Initializes the RAGChat system.
 
         Parameters:
-            pdf_folder (str): Path to the folder containing PDF files.
             logger: A logger object to record info, debug, and error messages.
 
         Behavior:
@@ -28,7 +36,7 @@ class RAGChat:
         self.logger = logger
         self.logger.info("Initializing RAGChat pipeline.")
 
-        self.pdf_folder = pdf_folder
+        self.pdf_folder = FOLDER_PATH_PDF
         self.logger.debug(f"PDF folder set to: {self.pdf_folder}")
         
         self.logger.info("Initializing FAISS Vector Store.")

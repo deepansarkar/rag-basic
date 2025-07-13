@@ -1,6 +1,5 @@
 from PyPDF2 import PdfReader
 
-
 def load_pdf(file_path: str, logger) -> str:
     """
     Loads a PDF file and extracts all text into a single long string.
